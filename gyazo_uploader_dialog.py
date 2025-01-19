@@ -30,6 +30,8 @@ from qgis.PyQt.QtCore import QTranslator, QCoreApplication, QUrl, QUrlQuery, QBy
 from qgis.core import QgsApplication, QgsAuthMethodConfig
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkAccessManager, QHttpMultiPart, QHttpPart
 from .gyazo_oauth_handler import GyazoOAuthHandler
+import json
+import webbrowser
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -169,55 +171,34 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         """Upload image to Gyazo."""
         url = 'https://upload.gyazo.com/api/upload'
 
-        # Get the image data (as bytes)
         imagedata_png = self.get_image_png()
         if not imagedata_png:
-            QtWidgets.QMessageBox.critical(
-                self, "エラー", "画像データが空です。"
-            )
             return
 
-        # Debugging: Display PNG information
-        is_png = self.is_png_format(imagedata_png)
-        if not is_png:
-            QtWidgets.QMessageBox.critical(
-                self, "エラー", "画像データがPNG形式ではありません。"
-            )
-            return
+        boundary = '----boundary123456'
+        # 生のマルチパートデータを自前で作る
+        body = []
+        body.append(f'--{boundary}')
+        body.append('Content-Disposition: form-data; name="imagedata"; filename="image.png"')
+        body.append('Content-Type: image/png')
+        body.append('')  # ヘッダ部とファイルバイナリの間は空行
+        body_bytes = '\r\n'.join(body).encode('utf-8') + b'\r\n' + imagedata_png + b'\r\n'
+        # app を追加
+        body_bytes += f'--{boundary}\r\nContent-Disposition: form-data; name="app"\r\n\r\nGyazo for QGIS\r\n'.encode('utf-8')
+        # access_token も追加
+        body_tail = f'--{boundary}\r\nContent-Disposition: form-data; name="access_token"\r\n\r\n{saved_token}\r\n--{boundary}--\r\n'.encode('utf-8')
+        final_body = body_bytes + body_tail
 
-        # Create the multipart request
-        multipart = QHttpMultiPart(QHttpMultiPart.FormDataType)
-
-        # Add the image data part
-        image_part = QHttpPart()
-        image_part.setHeader(
-            QNetworkRequest.ContentDispositionHeader,
-            b'form-data; name="imagedata"; filename="image.png"'
-        )
-        image_part.setBody(imagedata_png)
-        multipart.append(image_part)
-
-        # Add the access token part
-        token_part = QHttpPart()
-        token_part.setHeader(
-            QNetworkRequest.ContentDispositionHeader,
-            b'form-data; name="access_token"'
-        )
-        token_part.setBody(saved_token.encode())
-        multipart.append(token_part)
-
-        # Create the network request
         request = QNetworkRequest(QUrl(url))
+        # Content-Type を手動指定
+        request.setHeader(QNetworkRequest.ContentTypeHeader, f'multipart/form-data; boundary={boundary}')
+        # Content-Length も明示的に指定（これで chunked ではなくなる）
+        request.setHeader(QNetworkRequest.ContentLengthHeader, str(len(final_body)))
 
-        # Send the request
         network_manager = QNetworkAccessManager(self)
-        reply = network_manager.post(request, multipart)
+        reply = network_manager.post(request, final_body)
 
-        # Handle the reply asynchronously
         reply.finished.connect(lambda: self.handle_upload_reply(reply))
-
-        # Ensure the multipart object is not garbage-collected
-        multipart.setParent(reply)
 
     def handle_upload_reply(self, reply):
         """Handle the upload response."""
@@ -230,10 +211,10 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
                 f"アップロードに失敗しました: {reply.errorString()}\n\nResponse Body:\n{response_body}"
             )
         else:
-            gyazo_url = reply.readAll().data().decode()
-            QtWidgets.QMessageBox.information(
-                self, "アップロード完了", f"アップロードが完了しました: {gyazo_url}"
-            )
+            gyazo_res = reply.readAll().data().decode()
+            gyazo_json = json.loads(gyazo_res)
+            gyazo_url = gyazo_json.get('permalink_url')
+            webbrowser.open(gyazo_url)
 
     def upload_action(self):
         """Handle the upload action."""

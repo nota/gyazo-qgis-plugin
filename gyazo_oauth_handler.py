@@ -16,7 +16,7 @@ class GyazoOAuthHandler:
         self.client_id = os.getenv("GYAZO_CLIENT_ID")
         self.client_secret = os.getenv("GYAZO_CLIENT_SECRET")
         self.redirect_uri = "http://localhost:8080"
-        self.scope = "upload"
+        self.scope = "public"
         self.token_url = "https://gyazo.com/oauth/token"
         self.auth_url = "https://gyazo.com/oauth/authorize"
 
@@ -39,7 +39,7 @@ class GyazoOAuthHandler:
         # Step 3: Extract the authorization code
         auth_code = GyazoOAuthCallbackHandler.auth_code
         if not auth_code:
-            raise Exception("Authorization failed. No code received.")
+            raise Exception(f"Authorization failed. No code received. auth_code={auth_code}")
 
         # Step 4: Exchange authorization code for access token
         data = {
@@ -66,7 +66,7 @@ class GyazoOAuthCallbackHandler(BaseHTTPRequestHandler):
         # Parse the URL to extract the authorization code
         query = urlparse(self.path).query
         params = parse_qs(query)
-        OAuthCallbackHandler.auth_code = params.get("code", [None])[0]
+        GyazoOAuthCallbackHandler.auth_code = params.get("code", [None])[0]
 
         # Respond to the browser
         self.send_response(200)
