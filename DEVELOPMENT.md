@@ -6,7 +6,7 @@ This guide provides instructions for setting up the development environment and 
 
 1. Ubuntu System Requirements:
    - Ubuntu 22.04 LTS or later
-   - Python 3.x
+   - System Python 3.10 (/usr/bin/python3) - QGIS requires system Python, not pyenv or other Python version managers
    - QGIS 3.0 or later
 
 2. Install system dependencies:
@@ -33,7 +33,7 @@ This guide provides instructions for setting up the development environment and 
 
 3. Install Python dependencies:
    ```bash
-   pip install python-dotenv
+   python3 -m pip install python-dotenv
    ```
 
 ## Running Tests
@@ -46,19 +46,19 @@ This guide provides instructions for setting up the development environment and 
 
 2. Run all tests:
    ```bash
-   python -m unittest discover test -v
+   python3 -m unittest discover test -v
    ```
 
 3. Run specific test files:
    ```bash
    # Run QGIS environment tests
-   python -m unittest test.test_qgis_environment -v
+   python3 -m unittest test.test_qgis_environment -v
    
    # Run dialog tests
-   python -m unittest test.test_gyazo_uploader_dialog -v
+   python3 -m unittest test.test_gyazo_uploader_dialog -v
    
    # Run translation tests
-   python -m unittest test.test_translations -v
+   python3 -m unittest test.test_translations -v
    ```
 
 ## Test Structure
@@ -74,6 +74,7 @@ The test suite includes:
 1. "QApplication not initialized" error:
    - Ensure PyQt5 is properly installed with QGIS
    - The test framework initializes QApplication automatically
+   - Set QT_QPA_PLATFORM=offscreen for headless environments
 
 2. "postgres provider not available" warning:
    - This is optional and won't affect core functionality
@@ -92,7 +93,7 @@ The test suite includes:
 
 2. Run tests before and after making changes:
    ```bash
-   python -m unittest discover test -v
+   python3 -m unittest discover test -v
    ```
 
 3. Create a pull request with your changes
