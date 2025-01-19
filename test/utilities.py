@@ -34,6 +34,10 @@ def get_qgis_app():
 
     if QGIS_APP is None:
         gui_flag = True  # All test will run qgis in gui mode
+        # Initialize Qt application first
+        from PyQt5.QtWidgets import QApplication
+        if not QApplication.instance():
+            QApplication([])
         #noinspection PyPep8Naming
         QGIS_APP = QgsApplication(sys.argv, gui_flag)
         # Make sure QGIS_PREFIX_PATH is set in your env if needed!
