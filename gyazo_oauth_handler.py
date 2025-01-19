@@ -5,13 +5,18 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 import requests
 from qgis.PyQt.QtCore import QCoreApplication
+from dotenv import load_dotenv
+
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=env_path)
 
 class GyazoOAuthHandler:
-    def __init__(self, client_id, client_secret, redirect_uri, scope):
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.redirect_uri = redirect_uri
-        self.scope = scope
+    def __init__(self):
+        # Gyazo OAuth credentials and configuration
+        self.client_id = os.getenv("GYAZO_CLIENT_ID")
+        self.client_secret = os.getenv("GYAZO_CLIENT_SECRET")
+        self.redirect_uri = "http://localhost:8080"
+        self.scope = "upload"
         self.token_url = "https://gyazo.com/oauth/token"
         self.auth_url = "https://gyazo.com/oauth/authorize"
 
@@ -27,12 +32,12 @@ class GyazoOAuthHandler:
         webbrowser.open(auth_request_url)
 
         # Step 2: Start a local HTTP server to receive the callback
-        server = HTTPServer(('localhost', 8080), OAuthCallbackHandler)
+        server = HTTPServer(('localhost', 8080), GyazoOAuthCallbackHandler)
         print("Waiting for authorization response...")
         server.handle_request()  # Blocks until the callback is received
 
         # Step 3: Extract the authorization code
-        auth_code = OAuthCallbackHandler.auth_code
+        auth_code = GyazoOAuthCallbackHandler.auth_code
         if not auth_code:
             raise Exception("Authorization failed. No code received.")
 
@@ -49,11 +54,12 @@ class GyazoOAuthHandler:
 
         if "access_token" in response_data:
             print("Access token obtained successfully!")
+            server.server_close()
             return response_data["access_token"]
         else:
             raise Exception(f"Failed to obtain access token: {response_data}")
 
-class OAuthCallbackHandler(BaseHTTPRequestHandler):
+class GyazoOAuthCallbackHandler(BaseHTTPRequestHandler):
     auth_code = None
 
     def do_GET(self):
@@ -69,26 +75,3 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
 
         # Stop the server after handling the request
         raise KeyboardInterrupt  # To break the HTTPServer's event loop
-
-# Example usage in a QGIS plugin
-class GyazoUploader:
-    def __init__(self):
-        self.client_id = "YOUR_CLIENT_ID"
-        self.client_secret = "YOUR_CLIENT_SECRET"
-        self.redirect_uri = "http://localhost:8080"
-        self.scope = "upload"
-
-    def run(self):
-        # Run the OAuth authentication flow
-        handler = OAuthHandler(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            redirect_uri=self.redirect_uri,
-            scope=self.scope
-        )
-        try:
-            access_token = handler.start_auth_flow()
-            print(f"Access Token: {access_token}")
-            # Save the access token securely and use it for future API requests
-        except Exception as e:
-            print(f"Error during OAuth flow: {e}")

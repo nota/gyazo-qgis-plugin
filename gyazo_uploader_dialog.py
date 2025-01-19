@@ -30,15 +30,10 @@ from qgis.PyQt.QtCore import QTranslator, QCoreApplication, QUrl, QUrlQuery, QBy
 from qgis.core import QgsApplication, QgsAuthMethodConfig
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkAccessManager, QHttpMultiPart, QHttpPart
 from .gyazo_oauth_handler import GyazoOAuthHandler
-from dotenv import load_dotenv
-
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'gyazo_uploader_dialog_base.ui'))
-
-env_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(dotenv_path=env_path)
 
 class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, iface, parent=None):
@@ -129,48 +124,42 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         return image_bytes
 
     def is_png_format(self, imagedata):
+        """Check if the image data is in PNG format."""
         png_signature = b'\x89PNG\r\n\x1a\n'
         return imagedata.startswith(png_signature)
 
-    def oauth_action(self):
-        """Run the OAuth flow to authenticate and upload."""
+    def oauth_access_token(self):
+        """Check if the Gyazo OAuth configuration exists."""
         auth_manager = QgsApplication.authManager()
         if not auth_manager.masterPasswordIsSet():
             auth_manager.setMasterPassword(True)
 
         auth_cfg_id = 'gyazo_upload_auth_config'
-
         auth_cfg = QgsAuthMethodConfig()
         (res, auth_cfg) = auth_manager.loadAuthenticationConfig(auth_cfg_id, auth_cfg, True)
+        if not res:
+            return None
+        saved_access_token = auth_cfg.configMap().get('token')
+        return saved_access_token
 
-        if res:
-            saved_token = auth_cfg.configMap().get('token')
-            return
-
-        # Gyazo OAuth configuration
-        self.client_id = os.getenv("GYAZO_CLIENT_ID")
-        QtWidgets.QMessageBox.information(
-            self, "Gyazo OAuth", f"client_id: {self.client_id}"
-        )
-        self.client_secret = os.getenv("GYAZO_CLIENT_SECRET")
-        self.redirect_uri = "http://localhost:8080"
-        self.scope = "upload"
+    def oauth_authorize(self):
+        """Run the OAuth flow to authenticate and upload."""
+        auth_manager = QgsApplication.authManager()
+        if not auth_manager.masterPasswordIsSet():
+            auth_manager.setMasterPassword(True)
 
         try:
-            oauth_handler = GyazoOAuthHandler(
-                client_id=self.client_id,
-                client_secret=self.client_secret,
-                redirect_uri=self.redirect_uri,
-                scope=self.scope,
-            )
+            oauth_handler = GyazoOAuthHandler()
             access_token = oauth_handler.start_auth_flow()
             # Save the access token to the authentication manager
+            auth_cfg_id = 'gyazo_upload_auth_config'
+            auth_cfg = QgsAuthMethodConfig()
             auth_cfg.setId(auth_cfg_id)
             auth_cfg.setName("Gyazo OAuth Access Token")
             auth_cfg.setMethod("OAuth2")
             auth_cfg.setConfigMap({"token": access_token})
             auth_manager.storeAuthenticationConfig(auth_cfg, True)
-            return auth_cfg
+            return access_token
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "認証エラー", f"認証に失敗しました: {e}"
@@ -189,7 +178,6 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
             return
 
         # Debugging: Display PNG information
-        imagedata_png_len = len(imagedata_png)
         is_png = self.is_png_format(imagedata_png)
         if not is_png:
             QtWidgets.QMessageBox.critical(
@@ -249,16 +237,12 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def upload_action(self):
         """Handle the upload action."""
-        # Add your upload logic here
+        print("アクセストークンを取得")
+        saved_access_token = oauth_access_token()
+        if not saved_access_token:
+            saved_access_token = self.oauth_authorize()
+            if not saved_access_token:
+                return
         print("アップロード処理を実行")
-        auth_cfg_id = 'gyazo_upload_auth_config'
-        auth_cfg = QgsAuthMethodConfig()
-        auth_manager = QgsApplication.authManager()
-        (res, auth_cfg) = auth_manager.loadAuthenticationConfig(auth_cfg_id, auth_cfg, True)
-        if not res:
-            auth_cfg = self.oauth_action()
-
-        saved_token = auth_cfg.configMap().get('token')
-
-        self.upload_to_gyazo(saved_token)
+        self.upload_to_gyazo(saved_access_token)
         self.accept()  # Close the dialog after upload
