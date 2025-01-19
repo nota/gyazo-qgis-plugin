@@ -27,7 +27,7 @@ import os
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets, QtGui, QtCore
 from qgis.PyQt.QtCore import QTranslator, QCoreApplication, QUrl, QUrlQuery, QByteArray, QRect
-from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsProject
+from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsProject, QgsLayerTreeLayer
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkAccessManager, QHttpMultiPart, QHttpPart
 from PyQt5.QtGui import QPainter, QImage, QColor, QFont
 from .gyazo_oauth_handler import GyazoOAuthHandler
@@ -53,13 +53,14 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
 
-        self.setFixedSize(600, 450)
+        self.setFixedSize(600, 500)
 
         # Main layout for the dialog
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
-        image = self.get_image_png_with_attributions()
+        image_bytes = self.get_image_png_with_attributions()
+        image = QImage.fromData(image_bytes)
 
         # Calculate the aspect ratio of the map view
         map_width = image.width()
@@ -68,7 +69,7 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # Determine QLabel size to maintain aspect ratio
         max_width = 580  # Maximum width for the image label
-        max_height = 400  # Maximum height for the image label
+        max_height = 450  # Maximum height for the image label
 
         if max_width / aspect_ratio <= max_height:
             label_width = max_width
@@ -117,31 +118,36 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def get_attributions(self):
         """Get the list of layers in the current project."""
-        project = QgsProject.instance()
-        layers = project.mapLayers().values()
+        # プロジェクトのレイヤーツリーのルートを取得
+        layer_tree_root = QgsProject.instance().layerTreeRoot()
+
+        # 出典情報を格納するリスト
         attributions = []
 
-        for layer in layers:
+        # レイヤーツリー内のすべてのレイヤーを取得
+        for layer_tree_layer in layer_tree_root.findLayers():
             # レイヤーが可視状態であるかを確認
-            if layer.isVisible():
-                # レイヤーのタイプに応じて出典情報を取得
-                if layer.type() == layer.RasterLayer:
-                    provider_type = layer.providerType()
-                    if provider_type == 'wms':
-                        attribution = layer.attribution()
-                        if attribution:
-                            attributions.append(attribution)
-                    # 他のラスタレイヤータイプの場合の処理を追加可能
-                elif layer.type() == layer.VectorLayer:
-                    # ベクターレイヤーの場合の処理
-                    pass
-        return attributions
+            if layer_tree_layer.isVisible():
+                # 対応するレイヤーオブジェクトを取得
+                layer = layer_tree_layer.layer()
+                # 出典情報を取得
+                attribution = layer.attribution()
+                if attribution:
+                    attributions.append(attribution)
+                metadata = layer.metadata()
+                layer_rights = metadata.rights()
+                if layer_rights:
+                    for rights in layer_rights:
+                        attributions.append(rights)
+
+        unique_attributions = list(set(attributions))
+        return unique_attributions
 
     def get_image_with_attributions(self):
         """Capture the current map view as an image with attributions."""
         image = self.get_image()
         attributions = self.get_attributions()
-        # 出典情報を結合
+        # 出典情報を結合して1つの文字列にまとめる
         attribution_text = " | ".join(attributions)
 
         # フォント設定
@@ -160,7 +166,7 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # 新しい画像を作成
         new_image = QImage(image.width(), new_image_height, QImage.Format_ARGB32)
-        new_image.fill(QColor(255, 255, 255, 0))  # 透明な背景
+        new_image.fill(QColor(255, 255, 255))  # 白い背景
 
         # 新しい画像に元の地図を描画
         painter.begin(new_image)
