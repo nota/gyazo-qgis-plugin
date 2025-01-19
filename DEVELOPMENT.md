@@ -6,7 +6,7 @@ This guide provides instructions for setting up the development environment and 
 
 1. Ubuntu System Requirements:
    - Ubuntu 22.04 LTS or later
-   - System Python 3.10 (QGIS requires system Python, not pyenv or other Python version managers)
+   - System Python 3.10 (/usr/bin/python3) - QGIS requires system Python, not pyenv or other Python version managers
    - QGIS 3.0 or later
 
 2. Install system dependencies:
