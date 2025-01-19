@@ -1,0 +1,5 @@
+plugin_path: .
+github_organization_slug: yuiseki
+project_slug: qgis_gyazo_uploader
+dependencies:
+  - python-dotenv
