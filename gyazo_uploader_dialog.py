@@ -30,7 +30,7 @@ from qgis.PyQt.QtCore import QTranslator, QCoreApplication, QUrl, QUrlQuery, QBy
 from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsProject, QgsLayerTreeLayer
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkAccessManager, QHttpMultiPart, QHttpPart
 from PyQt5.QtGui import QPainter, QImage, QColor, QFont
-from .gyazo_oauth_handler import GyazoOAuthHandler
+from gyazo_oauth_handler import GyazoOAuthHandler
 import json
 import webbrowser
 

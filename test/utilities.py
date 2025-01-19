@@ -34,6 +34,10 @@ def get_qgis_app():
 
     if QGIS_APP is None:
         gui_flag = True  # All test will run qgis in gui mode
+        # Initialize Qt application first
+        from PyQt5.QtWidgets import QApplication
+        if not QApplication.instance():
+            QApplication([])
         #noinspection PyPep8Naming
         QGIS_APP = QgsApplication(sys.argv, gui_flag)
         # Make sure QGIS_PREFIX_PATH is set in your env if needed!
@@ -51,6 +55,12 @@ def get_qgis_app():
         #noinspection PyPep8Naming
         CANVAS = QgsMapCanvas(PARENT)
         CANVAS.resize(QtCore.QSize(400, 400))
+        # Add mock grab method for tests
+        def mock_grab():
+            image = QtGui.QImage(400, 400, QtGui.QImage.Format_ARGB32)
+            image.fill(QtGui.QColor(255, 255, 255))
+            return image
+        CANVAS.grab = mock_grab
 
     global IFACE  # pylint: disable=W0603
     if IFACE is None:

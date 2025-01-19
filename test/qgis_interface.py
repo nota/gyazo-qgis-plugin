@@ -48,6 +48,10 @@ class QgisInterface(QObject):
         # Set up slots so we can mimic the behaviour of QGIS when layers
         # are added.
         LOGGER.debug('Initialising canvas...')
+        
+    def mapCanvas(self):
+        """Mock function to return the map canvas"""
+        return self.canvas
         # noinspection PyArgumentList
         QgsMapLayerRegistry.instance().layersAdded.connect(self.addLayers)
         # noinspection PyArgumentList
