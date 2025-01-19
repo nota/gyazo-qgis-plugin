@@ -13,21 +13,30 @@ __date__ = '2025-01-18'
 __copyright__ = 'Copyright 2025, yuiseki'
 
 import unittest
+import sys
 
-from qgis.PyQt.QtWidgets import QDialogButtonBox, QDialog
+from qgis.PyQt.QtWidgets import QDialogButtonBox, QDialog, QApplication
+from qgis.PyQt.QtGui import QImage, QColor
 
 from gyazo_uploader_dialog import GyazoUploaderDialog
-
 from test.utilities import get_qgis_app
-QGIS_APP = get_qgis_app()
-
 
 class GyazoUploaderDialogTest(unittest.TestCase):
     """Test dialog works."""
 
+    @classmethod
+    def setUpClass(cls):
+        """Run before all tests."""
+        # Initialize Qt Application first
+        if not QApplication.instance():
+            cls.app = QApplication(sys.argv)
+        # Then initialize QGIS
+        cls.qgis_app, cls.canvas, cls.iface, cls.parent = get_qgis_app()
+
     def setUp(self):
         """Runs before each test."""
-        self.dialog = GyazoUploaderDialog(None)
+        # Get the QGIS interface mock
+        self.dialog = GyazoUploaderDialog(self.iface)
 
     def tearDown(self):
         """Runs after each test."""

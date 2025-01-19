@@ -10,13 +10,17 @@ def check_environment():
     print(f"QGIS_PREFIX_PATH: {os.getenv('QGIS_PREFIX_PATH', 'Not set')}")
     print(f"PYTHONPATH: {os.getenv('PYTHONPATH', 'Not set')}")
     
-    print("\n=== QGIS Import Test ===")
+    print("\n=== QGIS Installation Check ===")
     try:
-        from qgis.core import QgsApplication
+        import qgis
+        from qgis.core import QgsApplication, Qgis
         # Initialize QGIS Application
         qgs = QgsApplication([], False)
         qgs.initQgis()
-        print("QGIS Python bindings available")
+        print(f"QGIS Module Location: {qgis.__file__}")
+        print(f"QGIS Version: {Qgis.QGIS_VERSION}")
+        print("\nQGIS Python bindings available")
+        
         from qgis.core import QgsProviderRegistry
         r = QgsProviderRegistry.instance()
         providers = r.providerList()
