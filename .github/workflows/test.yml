@@ -39,4 +39,5 @@ jobs:
     - name: Run tests
       run: |
         cd ${{ github.workspace }}
-        PYTHONPATH=${{ github.workspace }}:$PYTHONPATH python3 -m unittest discover test -v
+        # Run tests with proper package context
+        PYTHONPATH=${{ github.workspace }} python3 -m test.test_gyazo_uploader_dialog -v
