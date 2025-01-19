@@ -238,7 +238,7 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
     def upload_action(self):
         """Handle the upload action."""
         print("アクセストークンを取得")
-        saved_access_token = oauth_access_token()
+        saved_access_token = self.oauth_access_token()
         if not saved_access_token:
             saved_access_token = self.oauth_authorize()
             if not saved_access_token:
