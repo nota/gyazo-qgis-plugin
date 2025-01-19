@@ -26,10 +26,10 @@ import os
 
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets, QtGui, QtCore
-from qgis.PyQt.QtCore import QTranslator, QCoreApplication, QUrl, QUrlQuery, QByteArray, QRect
+from qgis.PyQt.QtCore import QTranslator, QCoreApplication, QUrl, QUrlQuery, QByteArray, QRect, QBuffer, QIODevice
 from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsProject, QgsLayerTreeLayer
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkAccessManager, QHttpMultiPart, QHttpPart
-from PyQt5.QtGui import QPainter, QImage, QColor, QFont
+from qgis.PyQt.QtGui import QPainter, QImage, QColor, QFont
 from gyazo_oauth_handler import GyazoOAuthHandler
 import json
 import webbrowser
@@ -39,7 +39,7 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'gyazo_uploader_dialog_base.ui'))
 
 class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
-    def __init__(self, iface, parent=None):
+    def __init__(self, iface, parent=None, testing=False):
         """Constructor."""
         super(GyazoUploaderDialog, self).__init__(parent)
 
@@ -59,7 +59,21 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
-        image_bytes = self.get_image_png_with_attributions()
+        # Initialize image_bytes
+        image_bytes = None
+        
+        # Use dummy image for testing, otherwise capture real image
+        if testing:
+            # Create a small dummy image for testing
+            dummy_image = QImage(100, 100, QImage.Format_RGB32)
+            dummy_image.fill(QtGui.QColor(255, 255, 255))  # White background
+            buffer = QtCore.QBuffer()
+            buffer.open(QtCore.QBuffer.WriteOnly)
+            dummy_image.save(buffer, "PNG")
+            image_bytes = buffer.data().data()
+        else:
+            image_bytes = self.get_image_png_with_attributions()
+            
         image = QImage.fromData(image_bytes)
 
         # Calculate the aspect ratio of the map view
