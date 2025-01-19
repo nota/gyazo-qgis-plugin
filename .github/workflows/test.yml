@@ -24,8 +24,9 @@ jobs:
       run: |
         # Set required environment variables
         echo "QGIS_PREFIX_PATH=/usr" >> $GITHUB_ENV
-        echo "PYTHONPATH=/usr/share/qgis/python:/usr/share/qgis/python/plugins" >> $GITHUB_ENV
+        echo "PYTHONPATH=/usr/share/qgis/python:/usr/share/qgis/python/plugins:${{ github.workspace }}" >> $GITHUB_ENV
         echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
+        echo "PYTHONPATH=${{ github.workspace }}:$PYTHONPATH" >> $GITHUB_ENV
 
     - name: Install Python dependencies
       run: |
@@ -37,4 +38,5 @@ jobs:
 
     - name: Run tests
       run: |
-        python3 -m unittest discover test -v
+        cd ${{ github.workspace }}
+        PYTHONPATH=${{ github.workspace }}:$PYTHONPATH python3 -m unittest discover test -v
