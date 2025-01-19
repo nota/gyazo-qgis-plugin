@@ -111,7 +111,7 @@ class GyazoUploaderDialogTest(unittest.TestCase):
         self.assertTrue('multipart/form-data' in request.header(QNetworkRequest.ContentTypeHeader))
         
         # Verify request body contains required parts
-        body = call_args[0][1].data()  # Second argument of first call
+        body = call_args[0][1]  # Second argument of first call is already bytes
         body_str = body.decode('utf-8', errors='ignore')
         self.assertIn('Content-Disposition: form-data; name="imagedata"', body_str)
         self.assertIn('Content-Disposition: form-data; name="access_token"', body_str)
