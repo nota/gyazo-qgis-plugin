@@ -111,6 +111,27 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('GyazoUploaderDialogBase', message)
 
+    def get_image(self):
+        """Capture the current map view as an image."""
+        canvas = self.iface.mapCanvas()
+        image = canvas.grab().toImage()
+        return image
+
+    def get_image_png(self):
+        """Capture the current map view as png image bytes."""
+        image = self.get_image()
+        buffer = QtCore.QBuffer()
+        buffer.open(QtCore.QIODevice.WriteOnly)
+        image.save(buffer, "PNG")
+        image_bytes = buffer.data().data()
+        if not image_bytes:
+            raise Exception("Image data is empty. Unable to upload.")
+        return image_bytes
+
+    def is_png_format(self, imagedata):
+        png_signature = b'\x89PNG\r\n\x1a\n'
+        return imagedata.startswith(png_signature)
+
     def oauth_action(self):
         """Run the OAuth flow to authenticate and upload."""
         auth_manager = QgsApplication.authManager()
@@ -155,34 +176,9 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
                 self, "認証エラー", f"認証に失敗しました: {e}"
             )
 
-    def get_image(self):
-        """Capture the current map view as an image."""
-        canvas = self.iface.mapCanvas()
-        image = canvas.grab().toImage()
-        return image
-
-    def get_image_png(self):
-        """Capture the current map view as png image bytes."""
-        image = self.get_image()
-        buffer = QtCore.QBuffer()
-        buffer.open(QtCore.QIODevice.WriteOnly)
-        image.save(buffer, "PNG")
-        image_bytes = buffer.data().data()
-        if not image_bytes:
-            raise Exception("Image data is empty. Unable to upload.")
-        return image_bytes
-
-    def is_png_format(self, imagedata):
-        png_signature = b'\x89PNG\r\n\x1a\n'
-        return imagedata.startswith(png_signature)
-
     def upload_to_gyazo(self, saved_token):
         """Upload image to Gyazo."""
         url = 'https://upload.gyazo.com/api/upload'
-        self.client_id = os.getenv("GYAZO_CLIENT_ID")
-        QtWidgets.QMessageBox.information(
-            self, "Gyazo OAuth", f"client_id: {self.client_id}"
-        )
 
         # Get the image data (as bytes)
         imagedata_png = self.get_image_png()
