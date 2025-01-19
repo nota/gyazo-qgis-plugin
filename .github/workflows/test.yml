@@ -24,8 +24,12 @@ jobs:
       run: |
         # Set required environment variables
         echo "QGIS_PREFIX_PATH=/usr" >> $GITHUB_ENV
-        echo "PYTHONPATH=/usr/share/qgis/python:/usr/share/qgis/python/plugins" >> $GITHUB_ENV
+        # Set PYTHONPATH to include both QGIS paths and our package
+        echo "PYTHONPATH=/usr/share/qgis/python:/usr/share/qgis/python/plugins:${{ github.workspace }}:/usr/share/qgis/python/plugins/qgis_gyazo_uploader" >> $GITHUB_ENV
         echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
+        # Create plugin directory and copy files
+        sudo mkdir -p /usr/share/qgis/python/plugins/qgis_gyazo_uploader
+        sudo cp -r ${{ github.workspace }}/* /usr/share/qgis/python/plugins/qgis_gyazo_uploader/
 
     - name: Install Python dependencies
       run: |
@@ -37,4 +41,6 @@ jobs:
 
     - name: Run tests
       run: |
+        cd ${{ github.workspace }}
+        # Run tests with proper package context
         python3 -m unittest discover test -v
