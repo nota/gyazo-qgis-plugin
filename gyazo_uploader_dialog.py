@@ -26,9 +26,10 @@ import os
 
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets, QtGui, QtCore
-from qgis.PyQt.QtCore import QTranslator, QCoreApplication, QUrl, QUrlQuery, QByteArray
-from qgis.core import QgsApplication, QgsAuthMethodConfig
+from qgis.PyQt.QtCore import QTranslator, QCoreApplication, QUrl, QUrlQuery, QByteArray, QRect
+from qgis.core import QgsApplication, QgsAuthMethodConfig, QgsProject
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkAccessManager, QHttpMultiPart, QHttpPart
+from PyQt5.QtGui import QPainter, QImage, QColor, QFont
 from .gyazo_oauth_handler import GyazoOAuthHandler
 import json
 import webbrowser
@@ -58,7 +59,7 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         layout = QtWidgets.QVBoxLayout()
         self.setLayout(layout)
 
-        image = self.get_image()
+        image = self.get_image_png_with_attributions()
 
         # Calculate the aspect ratio of the map view
         map_width = image.width()
@@ -114,9 +115,68 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         image = canvas.grab().toImage()
         return image
 
-    def get_image_png(self):
-        """Capture the current map view as png image bytes."""
+    def get_attributions(self):
+        """Get the list of layers in the current project."""
+        project = QgsProject.instance()
+        layers = project.mapLayers().values()
+        attributions = []
+
+        for layer in layers:
+            # レイヤーが可視状態であるかを確認
+            if layer.isVisible():
+                # レイヤーのタイプに応じて出典情報を取得
+                if layer.type() == layer.RasterLayer:
+                    provider_type = layer.providerType()
+                    if provider_type == 'wms':
+                        attribution = layer.attribution()
+                        if attribution:
+                            attributions.append(attribution)
+                    # 他のラスタレイヤータイプの場合の処理を追加可能
+                elif layer.type() == layer.VectorLayer:
+                    # ベクターレイヤーの場合の処理
+                    pass
+        return attributions
+
+    def get_image_with_attributions(self):
+        """Capture the current map view as an image with attributions."""
         image = self.get_image()
+        attributions = self.get_attributions()
+        # 出典情報を結合
+        attribution_text = " | ".join(attributions)
+
+        # フォント設定
+        font = QFont("Arial", 10)
+
+        # テキストの高さを計算
+        painter = QPainter()
+        painter.begin(image)
+        painter.setFont(font)
+        text_rect = painter.boundingRect(QRect(0, 0, image.width(), 0), 0, attribution_text)
+        text_height = text_rect.height()
+        painter.end()
+
+        # 新しい画像の高さを計算
+        new_image_height = image.height() + text_height + 10  # 10ピクセルのマージンを追加
+
+        # 新しい画像を作成
+        new_image = QImage(image.width(), new_image_height, QImage.Format_ARGB32)
+        new_image.fill(QColor(255, 255, 255, 0))  # 透明な背景
+
+        # 新しい画像に元の地図を描画
+        painter.begin(new_image)
+        painter.drawImage(0, 0, image)
+
+        # 出典情報を描画
+        painter.setFont(font)
+        painter.setPen(QColor(0, 0, 0))  # 黒色のテキスト
+        painter.drawText(QRect(0, image.height() + 5, image.width(), text_height), 0, attribution_text)
+        painter.end()
+
+        return new_image
+
+    def get_image_png_with_attributions(self):
+        """Capture the current map view as png image bytes with attributions."""
+        image = self.get_image_with_attributions()
         buffer = QtCore.QBuffer()
         buffer.open(QtCore.QIODevice.WriteOnly)
         image.save(buffer, "PNG")
@@ -124,11 +184,6 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         if not image_bytes:
             raise Exception("Image data is empty. Unable to upload.")
         return image_bytes
-
-    def is_png_format(self, imagedata):
-        """Check if the image data is in PNG format."""
-        png_signature = b'\x89PNG\r\n\x1a\n'
-        return imagedata.startswith(png_signature)
 
     def oauth_access_token(self):
         """Check if the Gyazo OAuth configuration exists."""
@@ -171,7 +226,7 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         """Upload image to Gyazo."""
         url = 'https://upload.gyazo.com/api/upload'
 
-        imagedata_png = self.get_image_png()
+        imagedata_png = self.get_image_png_with_attributions()
         if not imagedata_png:
             return
 
@@ -185,7 +240,7 @@ class GyazoUploaderDialog(QtWidgets.QDialog, FORM_CLASS):
         body_bytes = '\r\n'.join(body).encode('utf-8') + b'\r\n' + imagedata_png + b'\r\n'
         # app を追加
         body_bytes += f'--{boundary}\r\nContent-Disposition: form-data; name="app"\r\n\r\nGyazo for QGIS\r\n'.encode('utf-8')
-        # access_token も追加
+        # 終端に access_token を追加
         body_tail = f'--{boundary}\r\nContent-Disposition: form-data; name="access_token"\r\n\r\n{saved_token}\r\n--{boundary}--\r\n'.encode('utf-8')
         final_body = body_bytes + body_tail
 
