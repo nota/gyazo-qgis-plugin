@@ -2,6 +2,10 @@
 
 A QGIS plugin that allows you to capture your current map view and upload it directly to Gyazo, complete with proper attribution information for all visible layers.
 
+## Demo
+
+https://github.com/user-attachments/assets/14953f12-b522-4f2a-9e39-2660f86f1940
+
 ## Features
 
 - Capture the current QGIS map view with a single click
