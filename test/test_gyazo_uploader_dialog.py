@@ -14,11 +14,11 @@ __copyright__ = 'Copyright 2025, yuiseki'
 
 import unittest
 
-from qgis.PyQt.QtGui import QDialogButtonBox, QDialog
+from qgis.PyQt.QtWidgets import QDialogButtonBox, QDialog
 
 from gyazo_uploader_dialog import GyazoUploaderDialog
 
-from utilities import get_qgis_app
+from test.utilities import get_qgis_app
 QGIS_APP = get_qgis_app()
 
 
