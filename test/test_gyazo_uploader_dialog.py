@@ -40,10 +40,10 @@ class GyazoUploaderDialogTest(unittest.TestCase):
         """Placeholder test."""
         self.assertTrue(True)
 
-    @patch('qgis_gyazo_uploader.gyazo_uploader_dialog.GyazoUploaderDialog.get_image_png_with_attributions')
+    @patch('gyazo-qgis-plugin.gyazo_uploader_dialog.GyazoUploaderDialog.get_image_png_with_attributions')
     def test_init_dialog(self, mock_get_image):
         """Test minimal dialog initialization."""
-        from qgis_gyazo_uploader.gyazo_uploader_dialog import GyazoUploaderDialog
+        from gyazo-qgis-plugin.gyazo_uploader_dialog import GyazoUploaderDialog
         
         # Create a 100x100 white image
         test_image = QImage(100, 100, QImage.Format_RGB32)
@@ -66,12 +66,12 @@ class GyazoUploaderDialogTest(unittest.TestCase):
         # Verify mock was called
         mock_get_image.assert_called_once()
 
-    @patch('qgis_gyazo_uploader.gyazo_uploader_dialog.QNetworkAccessManager')
-    @patch('qgis_gyazo_uploader.gyazo_uploader_dialog.GyazoUploaderDialog.oauth_access_token')
-    @patch('qgis_gyazo_uploader.gyazo_uploader_dialog.GyazoUploaderDialog.get_image_png_with_attributions')
+    @patch('gyazo-qgis-plugin.gyazo_uploader_dialog.QNetworkAccessManager')
+    @patch('gyazo-qgis-plugin.gyazo_uploader_dialog.GyazoUploaderDialog.oauth_access_token')
+    @patch('gyazo-qgis-plugin.gyazo_uploader_dialog.GyazoUploaderDialog.get_image_png_with_attributions')
     def test_upload_to_gyazo(self, mock_get_image, mock_oauth, mock_network_manager):
         """Test Gyazo upload functionality."""
-        from qgis_gyazo_uploader.gyazo_uploader_dialog import GyazoUploaderDialog
+        from gyazo-qgis-plugin.gyazo_uploader_dialog import GyazoUploaderDialog
         
         # Mock OAuth token
         mock_oauth.return_value = "test_token"

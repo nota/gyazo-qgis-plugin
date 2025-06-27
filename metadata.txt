@@ -12,8 +12,8 @@ email=yuiseki@gmail.com
 
 about=Plug-in to upload QGIS maps to Gyazo as image
 
-tracker=https://github.com/yuiseki/qgis_gyazo_uploader/issues
-repository=https://github.com/yuiseki/qgis_gyazo_uploader
+tracker=https://github.com/yuiseki/gyazo-qgis-plugin/issues
+repository=https://github.com/yuiseki/gyazo-qgis-plugin
 # End of mandatory metadata
 
 # Recommended items:

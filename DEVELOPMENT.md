@@ -5,6 +5,7 @@ This guide provides instructions for setting up the development environment and 
 ## Prerequisites
 
 1. Ubuntu System Requirements:
+
    - Ubuntu 22.04 LTS or later
    - System Python 3.10 (/usr/bin/python3) - QGIS requires system Python, not pyenv or other Python version managers
    - QGIS 3.0 or later
@@ -18,6 +19,7 @@ This guide provides instructions for setting up the development environment and 
 ## Environment Setup
 
 1. Set up QGIS environment variables:
+
    ```bash
    export QGIS_PREFIX_PATH=/usr
    export PYTHONPATH=/usr/share/qgis/python:/usr/share/qgis/python/plugins:$PYTHONPATH
@@ -26,9 +28,10 @@ This guide provides instructions for setting up the development environment and 
    Tip: Add these to your `~/.bashrc` for persistence.
 
 2. Clone the repository:
+
    ```bash
-   git clone https://github.com/yuiseki/qgis_gyazo_uploader.git
-   cd qgis_gyazo_uploader
+   git clone https://github.com/nota/gyazo-qgis-plugin.git
+   cd gyazo-qgis-plugin
    ```
 
 3. Install Python dependencies:
@@ -39,24 +42,28 @@ This guide provides instructions for setting up the development environment and 
 ## Running Tests
 
 1. Verify QGIS environment:
+
    ```bash
    python3 test/verify_qgis.py
    ```
+
    This script checks if QGIS bindings are properly installed and accessible.
 
 2. Run all tests:
+
    ```bash
    python3 -m unittest discover test -v
    ```
 
 3. Run specific test files:
+
    ```bash
    # Run QGIS environment tests
    python3 -m unittest test.test_qgis_environment -v
-   
+
    # Run dialog tests
    python3 -m unittest test.test_gyazo_uploader_dialog -v
-   
+
    # Run translation tests
    python3 -m unittest test.test_translations -v
    ```
@@ -64,6 +71,7 @@ This guide provides instructions for setting up the development environment and 
 ## Test Structure
 
 The test suite includes:
+
 - `test_qgis_environment.py`: Tests QGIS providers and projections
 - `test_gyazo_uploader_dialog.py`: Basic UI tests
 - `test_translations.py`: Translation functionality tests
@@ -72,11 +80,13 @@ The test suite includes:
 ## Common Issues
 
 1. "QApplication not initialized" error:
+
    - Ensure PyQt5 is properly installed with QGIS
    - The test framework initializes QApplication automatically
    - Set QT_QPA_PLATFORM=offscreen for headless environments
 
 2. "postgres provider not available" warning:
+
    - This is optional and won't affect core functionality
    - Install `postgresql` package if needed
 
@@ -87,11 +97,13 @@ The test suite includes:
 ## Development Workflow
 
 1. Create a new branch for your changes:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
 2. Run tests before and after making changes:
+
    ```bash
    python3 -m unittest discover test -v
    ```
